@@ -228,67 +228,6 @@ router.post('/', authUserToken, async (req, res) => {
             }
         });
     });
-
-
-    /*
-
-    sqlconn.query(query, function (err, rows, fields) {
-
-        if (err) failed(err);
-        else {
-            const uoid = rows[0].insertId;
-            
-            cart.forEach(product => {
-                //console.log(product);
-                query = 'INSERT INTO User_Order_Lines (uoid, pid) \
-                        VALUES ('+ sqlconn.escape(uoid) + ','
-                    + sqlconn.escape(product.pid) + ');\
-                        SELECT LAST_INSERT_ID();';
-
-                sqlconn.query(query, async (err, rows, fields) => {
-                    //console.log(rows[0].insertId);
-                    if (err) {
-                        //console.log('err2');
-                        failed(err);
-                    }
-                    else {
-                        const uolid = rows[0].insertId;
-                        if (product.pid == constants.CUSTOMIZED_ID) {
-
-                            const custom = new Custom({
-                                uolid: uolid,
-                                name: product.custom_name,
-                            });
-
-                            
-                            await custom.save((err, custom) => {
-                                if (err) console.log('Unable to insert custom. ' + err);
-                            });
-
-                            product.flavors.forEach(flavor => {
-                                query = 'INSERT INTO Customized_Flavors (uolid, fid) \
-                                VALUES ('+ sqlconn.escape(uolid) + ','
-                                    + sqlconn.escape(flavor) + ');';
-                                sqlconn.query(query, function (err, rows, fields) {
-                                    if (err) {
-                                        //console.log('Failed to insert to Customized_Flavors');
-                                        failed(err);
-                                    } else {
-                                        //console.log('Inserted to Customized_Flavors');
-                                    }
-                                });
-                            })
-                        }
-                    }
-                });
-            });
-
-            return res.status(200).send('Order inserted.');
-    }
-    function failed(err) {
-        return res.status(400).send('Unable to insert. ' + err);
-    }
-    */
 });
 
 
