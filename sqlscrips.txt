@@ -1,0 +1,154 @@
+CREATE DATABASE IGUM;
+
+USE IGUM;
+
+
+CREATE TABLE Users
+(uid INT NOT NULL AUTO_INCREMENT,
+email VARCHAR(64) NOT NULL UNIQUE,
+password VARCHAR(1024) NOT NULL,
+firstname VARCHAR(64) NOT NULL,
+lastname VARCHAR(64) NOT NULL,
+birthdate DATE,
+gender CHAR(1),
+phone_number VARCHAR(32),
+address VARCHAR(256),
+created_at DATE,
+PRIMARY KEY(uid));
+
+
+CREATE TABLE Employees
+(eid INT NOT NULL AUTO_INCREMENT,
+ssn VARCHAR(32) UNIQUE,
+email VARCHAR(64) NOT NULL UNIQUE,
+password VARCHAR(1024) NOT NULL,
+firstname VARCHAR(64) NOT NULL,
+lastname VARCHAR(64) NOT NULL,
+birthdate DATE,
+gender CHAR(1),
+address VARCHAR(256),
+phone_number VARCHAR(32),
+created_at DATE,
+PRIMARY KEY(eid));
+
+CREATE TABLE Products
+(pid INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(64) UNIQUE,
+price float,
+image VARCHAR(256) DEFAULT NULL,
+PRIMARY KEY(pid));
+
+CREATE TABLE Flavors
+(fid INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(64) UNIQUE,
+price float,
+PRIMARY KEY(fid));
+
+CREATE TABLE User_Orders
+(uoid INT NOT NULL AUTO_INCREMENT,
+uid INT,
+date_time DATE,
+total_price FLOAT DEFAULT 0,
+del_address VARCHAR(256),
+cc_number VARCHAR(32),
+cc_expdate DATE,
+PRIMARY KEY(uoid),
+FOREIGN KEY(uid) REFERENCES Users(uid));
+ 
+CREATE TABLE User_Order_Lines
+(uolid INT NOT NULL AUTO_INCREMENT,
+uoid INT,
+pid INT,
+PRIMARY KEY(uolid),
+FOREIGN KEY(uoid) REFERENCES User_Orders(uoid),
+FOREIGN KEY(pid) REFERENCES Products(pid));
+
+CREATE TABLE Customized_Flavors
+(cfid INT NOT NULL AUTO_INCREMENT,
+uolid INT,
+fid INT,
+PRIMARY KEY(cfid),
+FOREIGN KEY(uolid) REFERENCES User_Order_Lines(uolid),
+FOREIGN KEY(fid) REFERENCES Flavors(fid));
+
+CREATE TABLE Roles
+(rid INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(64) UNIQUE,
+salary FLOAT,
+description VARCHAR(128),
+PRIMARY KEY(rid));
+
+ALTER TABLE Employees ADD rid INT NOT NULL DEFAULT 1;
+ALTER TABLE Employees ADD CONSTRAINT fk_role_id FOREIGN KEY (rid) REFERENCES Roles (rid);
+
+--DO NOT CREATE
+--CREATE TABLE Vendors 
+--(vid INT NOT NULL AUTO_INCREMENT,
+--name VARCHAR(64),
+--email VARCHAR(64),
+--phone_number VARCHAR(32),
+--address VARCHAR(256), 
+--PRIMARY KEY(vid))
+
+
+CREATE TABLE Ingredients 
+(iid INT NOT NULL AUTO_INCREMENT,
+name VARCHAR(64),
+vendor VARCHAR(64),
+PRIMARY KEY(iid));
+--vid INT,
+--FOREIGN KEY(vid) REFERENCES Vendors(vid));  
+
+CREATE TABLE Ingredients_Products 
+(amount FLOAT,
+iid INT,
+pid INT, 
+FOREIGN KEY(iid) REFERENCES Ingredients(iid),
+FOREIGN KEY(pid) REFERENCES Products(pid));
+ALTER TABLE `Ingredients_Products` ADD UNIQUE( `iid`, `pid`);
+
+
+CREATE TABLE Ingredients_Flavors 
+(amount FLOAT,
+iid INT,
+fid INT, 
+FOREIGN KEY(iid) REFERENCES Ingredients(iid),
+FOREIGN KEY(fid) REFERENCES Flavors(fid));
+ALTER TABLE `Ingredients_Flavors` ADD UNIQUE( `iid`, `fid`);
+
+
+//number of sales for each products 
+SELECT Products.pid, Products.name, Products.price, 
+COUNT(User_Order_Lines.uolid) FROM Products INNER JOIN User_Order_Lines 
+ON Products.pid = User_Order_Lines.pid GROUP BY Products.pid;
+
+//number of sales for each flavor
+SELECT Flavors.fid, Flavors.name, Flavors.price, 
+COUNT(Customized_Flavors.cfid) FROM Flavors INNER JOIN Customized_Flavors 
+ON Flavors.fid = Customized_Flavors.fid GROUP BY Flavors.fid;
+
+
+
+__________________________________________
+DELIMITER //
+CREATE TRIGGER UOL_Total_Price AFTER INSERT ON User_Order_Lines
+FOR EACH ROW
+BEGIN
+	UPDATE User_Orders
+    	SET total_price = total_price + (SELECT price FROM Products WHERE pid=NEW.pid)
+        WHERE uoid=NEW.uoid;
+END; //
+DELIMITER ;
+
+____________________________________________
+DELIMITER //
+CREATE TRIGGER CF_Total_Price AFTER INSERT ON Customized_Flavors
+FOR EACH ROW
+BEGIN
+	UPDATE User_Orders
+    	SET total_price = total_price + (SELECT price FROM Flavors WHERE fid=NEW.fid)
+        WHERE uoid = (SELECT uoid FROM User_Order_Lines WHERE uolid=NEW.uolid);
+END; //
+DELIMITER ;
+
+

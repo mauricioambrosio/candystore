@@ -1,0 +1,8 @@
+{
+    "jwtPrivateKey":"CANDY_STORE_JWT_PRIVATE_KEY",
+    "mysqlHost": "CANDY_STORE_MYSQL_HOST",
+    "mysqlUser": "CANDY_STORE_MYSQL_USER",
+    "mysqlPassword": "CANDY_STORE_MYSQL_PASSWORD",
+    "mysqldb": "CANDY_STORE_MYSQL_DB",
+    "mongodb": "CANDY_STORE_MONGO_DB"
+}
