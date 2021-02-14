@@ -21,8 +21,6 @@ router.post('/', async (req, res) => {
 
     newUser = _.pick(req.body, ['email', 'password', 'firstname', 'lastname']);
 
-    console.log(await userEmailExists(newUser.email));
-
     if (await userEmailExists(newUser.email))
         return res.status(400).send('Email already being used.');
     else {
@@ -62,8 +60,6 @@ router.put('/me', authUserToken, (req, res) => {
 
     if (error) return res.status(400).send(error.details[0].message);
 
-
-
     uid = req.user.uid;
     updatedUser = _.pick(req.body, ['firstname', 'lastname', 'gender', 'birthdate', 'phone_number', 'address']);
 
@@ -73,39 +69,37 @@ router.put('/me', authUserToken, (req, res) => {
     sqlconn.query(query, function (err, rows, fields) {
         user = rows[0];
         if (!user) return res.status(400).send('User has been removed.');
-        else advance();
-    });
+        else  {
 
-    async function advance() {
+            if (updatedUser.firstname === undefined) updatedUser.firstname = user.firstname;
+            if (updatedUser.lastname === undefined) updatedUser.lastname = user.lastname;
+            if (updatedUser.gender === undefined) updatedUser.gender = user.gender;
+            if (updatedUser.birthdate === undefined) updatedUser.birthdate = user.birthdate;
+            if (updatedUser.phone_number === undefined) updatedUser.phone_number = user.phone_number;
+            if (updatedUser.address === undefined) updatedUser.address = user.address;
 
-        if (updatedUser.firstname === undefined) updatedUser.firstname = user.firstname;
-        if (updatedUser.lastname === undefined) updatedUser.lastname = user.lastname;
-        if (updatedUser.gender === undefined) updatedUser.gender = user.gender;
-        if (updatedUser.birthdate === undefined) updatedUser.birthdate = user.birthdate;
-        if (updatedUser.phone_number === undefined) updatedUser.phone_number = user.phone_number;
-        if (updatedUser.address === undefined) updatedUser.address = user.address;
+            query = 'UPDATE Users SET\
+                firstname=' + sqlconn.escape(updatedUser.firstname) +
+                ',lastname=' + sqlconn.escape(updatedUser.lastname) +
+                ',gender=' + sqlconn.escape(updatedUser.gender) +
+                ',birthdate=' + sqlconn.escape(updatedUser.birthdate) +
+                ',phone_number=' + sqlconn.escape(updatedUser.phone_number) +
+                ',address=' + sqlconn.escape(updatedUser.address) +
+                ' WHERE uid=' + sqlconn.escape(uid);
 
-        query = 'UPDATE Users SET\
-            firstname=' + sqlconn.escape(updatedUser.firstname) +
-            ',lastname=' + sqlconn.escape(updatedUser.lastname) +
-            ',gender=' + sqlconn.escape(updatedUser.gender) +
-            ',birthdate=' + sqlconn.escape(updatedUser.birthdate) +
-            ',phone_number=' + sqlconn.escape(updatedUser.phone_number) +
-            ',address=' + sqlconn.escape(updatedUser.address) +
-            ' WHERE uid=' + sqlconn.escape(uid);
-
-        sqlconn.query(query, function (err, rows, fields) {
-            getUpdatedUser();
-        });
-
-        function getUpdatedUser() {
-            query = 'SELECT *, NULL as password FROM Users WHERE uid=' + sqlconn.escape(uid);
             sqlconn.query(query, function (err, rows, fields) {
-                const user = rows[0];
-                res.status(200).send(user);
+                getUpdatedUser();
             });
+
+            function getUpdatedUser() {
+                query = 'SELECT *, NULL as password FROM Users WHERE uid=' + sqlconn.escape(uid);
+                sqlconn.query(query, function (err, rows, fields) {
+                    const user = rows[0];
+                    res.status(200).send(user);
+                });
+            }
         }
-    }
+    });
 });
 
 
@@ -140,10 +134,10 @@ router.get('/', authAdminToken, (req, res) => {
 
 function validatePost(user) {
     const schema = {
-        firstname: Joi.string().max(64).required(),
-        lastname: Joi.string().max(64).required(),
-        email: Joi.string().max(64).required().email(),
-        password: Joi.string().max(64).required()
+        firstname: Joi.string().min(1).max(128).required(),
+        lastname: Joi.string().min(1).max(128).required(),
+        email: Joi.string().min(1).max(128).email().required(),
+        password: Joi.string().min(1).max(128).required()
     };
 
     return Joi.validate(user, schema);
@@ -151,13 +145,12 @@ function validatePost(user) {
 
 function validatePut(user) {
     const schema = {
-        firstname: Joi.string().max(64),
-        lastname: Joi.string().max(64),
-        email: Joi.string().max(64).email(),
-        gender: Joi.string().valid('M', 'F').max(1).allow(null),
-        phone_number: Joi.string().max(32).allow(null),
-        birthdate: Joi.date().allow(null),
-        address: Joi.string().max(256).allow(null)
+        firstname: Joi.string().min(1).max(128).required(),
+        lastname: Joi.string().min(1).max(128).required(),
+        gender: Joi.string().valid('M', 'F').max(1).allow(null, ""),
+        phone_number: Joi.string().max(32).allow(null, ""),
+        birthdate: Joi.date().max(new Date().setDate(new Date().getDate() - 1)).allow(null),
+        address: Joi.string().max(256).allow(null, "")
     };
 
     return Joi.validate(user, schema);

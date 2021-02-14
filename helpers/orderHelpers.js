@@ -87,28 +87,18 @@ async function addPrices(cart){
 
         sqlconn.query(query, async (err, rows, fields) => {
             
-            console.log("product rows", err);
-            console.log("product rows", rows);
-
             if(err) return resolve(false);   
             rows.forEach(row => {
                 productPrices[row.pid] = row.price
             });
 
-            console.log("productPrices", productPrices);
-
             const cartFlavors = [] 
         
             cart.forEach(product=>{
-                product.flavors.forEach(flavor => {
-                    
-                    console.log(flavor)
-                    
+                product.flavors.forEach(flavor => {                    
                     if( !(flavor in cartFlavors) ) cartFlavors.push(flavor);
                 });
             }); 
-
-            console.log("cartFlavors", cartFlavors);
 
             if (cartFlavors.length === 0) return complete(resolve, cart, productPrices, flavorPrices); 
 
@@ -118,19 +108,13 @@ async function addPrices(cart){
                 if(i < cartFlavors.length - 1) query += ',';
             }
             query += ')';
-
             
             sqlconn.query(query, (err, rows, fields) => {
-                
-                console.log("flavor rows", err);
-                console.log("flavor rows", rows);
-                
+                                
                 if(err) return resolve(false);       
                 rows.forEach(row => {
                     flavorPrices[row.fid] = row.price
                 });
-
-                console.log("flavorPrices", flavorPrices);
 
                 return complete(resolve, cart, productPrices, flavorPrices);
             });
@@ -146,7 +130,6 @@ const complete = (resolve, cart, productPrices, flavorPrices ) => {
     
     return resolve(cart);
 }
-
 
 module.exports.addPrices = addPrices;
 module.exports.isOrderValid = isOrderValid;

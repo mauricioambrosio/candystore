@@ -61,6 +61,7 @@ router.post('/', authUserToken, async (req, res) => {
 
     let cart = req.body.cart;
     const del_address = req.body.del_address;
+    const phone_number = req.body.phone_number;
 
     const uid = req.user.uid;
     const date_time = moment().format().toString();
@@ -76,15 +77,12 @@ router.post('/', authUserToken, async (req, res) => {
 
     let totalPrice = 0;
     cart.forEach(product => totalPrice += product.price);
-
-    console.log("-----------------", cart, "-----------------");
-
-    // return await cart;  
     
     if (req.body.ccard == null) {
-        query = 'INSERT INTO User_Orders (uid, del_address, date_time, total_price) \
+        query = 'INSERT INTO User_Orders (uid, del_address, phone_number, date_time, total_price) \
             VALUES ('+ sqlconn.escape(uid) + ','
             + sqlconn.escape(del_address) + ','
+            + sqlconn.escape(phone_number) + ','
             + sqlconn.escape(date_time) + ','
             + sqlconn.escape(totalPrice) + ');\
             SELECT LAST_INSERT_ID();';
@@ -93,9 +91,10 @@ router.post('/', authUserToken, async (req, res) => {
         let cc_expdate = req.body.ccard.cc_expdate;
         cc_expdate = moment(cc_expdate, 'YYYY-MM').format().toString();
 
-        query = 'INSERT INTO User_Orders (uid, del_address, cc_number, cc_expdate, date_time, total_price) \
+        query = 'INSERT INTO User_Orders (uid, del_address, phone_number, cc_number, cc_expdate, date_time, total_price) \
             VALUES ('+ sqlconn.escape(uid) + ','
             + sqlconn.escape(del_address) + ','
+            + sqlconn.escape(phone_number) + ','
             + sqlconn.escape(cc_number) + ','
             + sqlconn.escape(cc_expdate) + ','
             + sqlconn.escape(date_time) + ','
@@ -105,9 +104,6 @@ router.post('/', authUserToken, async (req, res) => {
     sqlconn.getConnection((err, connection)=>{
         connection.beginTransaction((err)=>{
             if(err){
-
-                console.log("POINT 0", err);
-                
                 connection.rollback(()=>{
                     connection.release();
                 });
@@ -115,10 +111,7 @@ router.post('/', authUserToken, async (req, res) => {
             }
             else{
                 connection.query(query, (err, rows, fields)=>{
-                    if (err) {
-
-                        console.log("POINT 1", err);
-                        
+                    if (err) {                        
                         connection.rollback(() => {
                             connection.release();
                         });
@@ -137,10 +130,7 @@ router.post('/', authUserToken, async (req, res) => {
                         }
 
                         connection.query(query, async (err, rows, fields) => {
-                            if (err){
-
-                                console.log("POINT 2", err);
-                                
+                            if (err){                                
                                 connection.rollback(() => {
                                     connection.release();
                                 });
@@ -154,11 +144,6 @@ router.post('/', authUserToken, async (req, res) => {
                                     const userOrderLines = rows;
                                     
                                     if(err || userOrderLines.length !== customProducts.length){
-
-                                        console.log("POINT 3 USER ORDER LINES", userOrderLines);
-                                        console.log("POINT 3 CUSTOM PRODUCTS", customProducts);
-                                        console.log("POINT 3", err);
-
                                         connection.rollback(() => {
                                             connection.release();
                                         });
@@ -166,13 +151,9 @@ router.post('/', authUserToken, async (req, res) => {
                                     }
                                     else{
 
-                                        console.log('customProducts', customProducts);
-                                        console.log('userOrderLines', userOrderLines);
-
-                                        query = 'INSERT INTO Customized_Flavors (uolid, fid) VALUES';
-                                        
+                                        query = 'INSERT INTO Customized_Flavors (uolid, fid) VALUES';            
                                         const insertedFlavors = [];
-                                        
+                            
                                         for (i = 0; i < userOrderLines.length; i++) {
                                             for (j = 0; j < customProducts[i].flavors.length; j++ ){
                                                 const flavor = customProducts[i].flavors[j];
@@ -184,8 +165,6 @@ router.post('/', authUserToken, async (req, res) => {
                                             if ( i === userOrderLines.length - 1 ) query += ';';
                                             else if (customProducts[i+1].flavors.length !== 0) query += ',';
                                         }
-
-                                        console.log(query);
                                         
                                         if (insertedFlavors.length===0){
 
@@ -200,10 +179,7 @@ router.post('/', authUserToken, async (req, res) => {
                                         } else {
                                             
                                             connection.query(query, (err, rows, fields) => {
-                                                if (err){
-
-                                                    console.log("POINT 4", err);
-                                                    
+                                                if (err){                                                    
                                                     connection.rollback(() => {
                                                         connection.release();
                                                     });
@@ -243,7 +219,8 @@ function validatePost(order) {
             cc_cvv: Joi.string().min(2).max(7).required(),
             cc_expdate: Joi.date().required()
         }),
-        del_address: Joi.string().max(256)
+        del_address: Joi.string().max(256),
+        phone_number: Joi.string().max(32)
     }
     return Joi.validate(order, schema);
 }
