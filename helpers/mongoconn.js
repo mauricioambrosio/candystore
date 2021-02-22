@@ -8,4 +8,4 @@ mongoose.connect(config.get('mongodb'), {useNewUrlParser:true})
         .catch(function(err){
             console.log('Could not connect to MongoDB...', err);
         });
-module.exports=mongoose;
+module.exports = mongoose;

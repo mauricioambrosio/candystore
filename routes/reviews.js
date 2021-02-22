@@ -47,7 +47,7 @@ router.get('/pid/:id', async (req, res) => {
 
 function appendUser(review) {
     return new Promise((resolve, reject) => {
-        const fullReview = _.pick(review, ['_id', 'uid', 'pid', 'score', 'text', 'datetime']);
+        const fullReview = _.pick(review, ['_id', 'uid', 'pid', 'score', 'text']);
         query = 'SELECT firstname, lastname FROM Users WHERE uid=' + sqlconn.escape(fullReview.uid);
         sqlconn.query(query, function (err, rows, fields) {
             var user = rows[0];
@@ -76,9 +76,10 @@ router.get('/uid/:id', async (req, res) => {
 
 router.post('/', authUserToken, async (req, res) => {
 
+    console.log("req.body", req.body);
+    
     const { error } = validatePost(req.body); //result.error
     if (error) return res.status(400).send(error.details[0].message)
-
     const review = new Review({
         uid: req.user.uid,
         pid: req.body.pid,
