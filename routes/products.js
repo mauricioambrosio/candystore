@@ -124,6 +124,58 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
 });
 
 
+router.post('/:id', authEmployeeToken, (req, res) => {
+    const pid = req.params.id;
+    query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
+
+    sqlconn.query(query, (err, rows, fields) => {
+        product = rows[0];
+        if (!product) return res.status(400).send('Product does not exist.');
+        
+        else {
+            query = 'UPDATE Products SET \
+                    active = 1 WHERE pid=' + sqlconn.escape(pid);
+            sqlconn.query(query, (err, rows, fields) => {
+                if (err) return res.status(500).send('Unable to update.' + err);
+
+                query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
+                
+                sqlconn.query(query, function (err, rows, fields) {
+                    product = rows[0];
+                    return res.status(200).send(product);
+                });
+            })
+        }
+    }); 
+});
+
+
+router.delete('/:id', authEmployeeToken, (req, res) => {
+    const pid = req.params.id;
+    query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
+
+    sqlconn.query(query, (err, rows, fields) => {
+        product = rows[0];
+        if (!product) return res.status(400).send('Product does not exist.');
+        
+        else {
+            query = 'UPDATE Products SET \
+                    active = 0 WHERE pid=' + sqlconn.escape(pid);
+            sqlconn.query(query, (err, rows, fields) => {
+                if (err) return res.status(500).send('Unable to update.' + err);
+
+                query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
+                
+                sqlconn.query(query, function (err, rows, fields) {
+                    product = rows[0];
+                    return res.status(200).send(product);
+                });
+            })
+        }
+    });
+});
+
+
 
 //Include ingredients
 router.post('/', authEmployeeToken, (req, res) => {
@@ -154,9 +206,7 @@ router.post('/', authEmployeeToken, (req, res) => {
     });
 });
 
-
 router.put('/:id', authEmployeeToken, (req, res) => {
-
     const { error } = validatePut(req.body); //result.error
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -166,7 +216,7 @@ router.put('/:id', authEmployeeToken, (req, res) => {
 
     query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
 
-    var product;
+    let product;
     sqlconn.query(query, function (err, rows, fields) {
         product = rows[0];
         if (!product) return res.status(400).send('Product does not exist.');
@@ -175,7 +225,7 @@ router.put('/:id', authEmployeeToken, (req, res) => {
             if (updatedProduct.price == null) updatedProduct.price = product.price;
 
             query = 'UPDATE Products SET\
-                    name='+ sqlconn.escape(updatedProduct.name) +
+                    name=' + sqlconn.escape(updatedProduct.name) +
                     ',price=' + sqlconn.escape(updatedProduct.price) +
                     ' WHERE pid=' + sqlconn.escape(pid);
 

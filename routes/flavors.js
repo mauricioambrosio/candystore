@@ -128,6 +128,58 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
 });
 
 
+router.post('/:id', authEmployeeToken, (req, res) => {
+    const fid = req.params.id;
+    query = 'SELECT * FROM Flavors WHERE fid=' + sqlconn.escape(fid);
+
+    sqlconn.query(query, (err, rows, fields) => {
+        flavor = rows[0];
+        if (!flavor) return res.status(400).send('Flavor does not exist.');
+        
+        else {
+            query = 'UPDATE Flavors SET \
+                    active = 1 WHERE fid=' + sqlconn.escape(fid);
+            sqlconn.query(query, (err, rows, fields) => {
+                if (err) return res.status(500).send('Unable to update.' + err);
+
+                query = 'SELECT * FROM Flavors WHERE fid=' + sqlconn.escape(fid);
+                
+                sqlconn.query(query, function (err, rows, fields) {
+                    flavor = rows[0];
+                    return res.status(200).send(flavor);
+                });
+            });
+        }
+    }); 
+});
+
+
+router.delete('/:id', authEmployeeToken, (req, res) => {
+    const fid = req.params.id;
+    query = 'SELECT * FROM Flavors WHERE fid=' + sqlconn.escape(fid);
+
+    sqlconn.query(query, (err, rows, fields) => {
+        flavor = rows[0];
+        if (!flavor) return res.status(400).send('Flavor does not exist.');
+        
+        else {
+            query = 'UPDATE Flavors SET \
+                    active = 0 WHERE fid=' + sqlconn.escape(fid);
+            sqlconn.query(query, (err, rows, fields) => {
+                if (err) return res.status(500).send('Unable to update.' + err);
+
+                query = 'SELECT * FROM Flavors WHERE fid=' + sqlconn.escape(fid);
+                
+                sqlconn.query(query, function (err, rows, fields) {
+                    flavor = rows[0];
+                    return res.status(200).send(flavor);
+                });
+            });
+        }
+    });
+});
+
+
 //Include ingredients
 router.post("/", authEmployeeToken, (req, res) => {
     const { error } = validatePost(req.body); //result.error
@@ -168,7 +220,7 @@ router.put("/:id", authEmployeeToken, async (req, res) => {
 
     query = "SELECT * FROM Flavors WHERE fid=" + sqlconn.escape(fid);
 
-    var flavor;
+    let flavor;
     sqlconn.query(query, function (err, rows, fields) {
         flavor = rows[0];
         if (!flavor) return res.status(400).send("Flavor does not exist.");

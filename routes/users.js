@@ -134,9 +134,9 @@ router.get('/', authAdminToken, (req, res) => {
 
 function validatePost(user) {
     const schema = {
-        firstname: Joi.string().min(1).max(128).required(),
-        lastname: Joi.string().min(1).max(128).required(),
-        email: Joi.string().min(1).max(128).email().required(),
+        firstname: Joi.string().min(1).max(64).required(),
+        lastname: Joi.string().min(1).max(64).required(),
+        email: Joi.string().min(1).max(64).email().required(),
         password: Joi.string().min(1).max(128).required()
     };
 
@@ -145,11 +145,11 @@ function validatePost(user) {
 
 function validatePut(user) {
     const schema = {
-        firstname: Joi.string().min(1).max(128).required(),
-        lastname: Joi.string().min(1).max(128).required(),
+        firstname: Joi.string().min(1).max(64).required(),
+        lastname: Joi.string().min(1).max(64).required(),
         gender: Joi.string().valid('M', 'F').max(1).allow(null, ""),
         phone_number: Joi.string().max(32).allow(null, ""),
-        birthdate: Joi.date().max(new Date().setDate(new Date().getDate() - 1)).allow(null),
+        birthdate: Joi.date().max(new Date().setDate(new Date().getDate() - 1)).allow(null, ""),
         address: Joi.string().max(256).allow(null, "")
     };
 

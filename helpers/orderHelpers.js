@@ -42,8 +42,11 @@ function productsExist(products) {
         query = query + ';';
 
         sqlconn.query(query, function (err, rows, fields) {
-            if (rows.length === products.length) resolve(true);
-            else resolve(false);
+            if (rows.length < products.length) return resolve(false);
+            rows.forEach(row => {
+                if (!row.active) return resolve(false);
+            });
+            return resolve(true);
         });
     });
 }
@@ -65,9 +68,11 @@ function flavorsExist(flavors) {
         query = query + ';';
 
         sqlconn.query(query, function (err, rows, fields) {
-
-            if (rows.length === flavors.length) resolve(true);
-            else resolve(false);
+            if (rows.length < flavors.length) return resolve(false);
+            rows.forEach(row => {
+                if (!row.active) return resolve(false);
+            });
+            return resolve(true);
         });
     });
 }

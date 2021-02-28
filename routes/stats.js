@@ -14,14 +14,56 @@ router.get('/', authEmployeeToken, (req, res) => {
 
     sqlconn.query(query, (err, rows, fields) => {
         if (err) return res.status(404).send('Unable to get stats.' + err);
+
         stats = rows[0];
-        return res.status(200).send(stats);
+
+        query = 'SELECT Products.pid, Products.name, Products.price, COUNT(User_Order_Lines.uolid) as n_sold\
+                FROM Products INNER JOIN User_Order_Lines \
+                ON Products.pid = User_Order_Lines.pid GROUP BY Products.pid; ';
+
+        sqlconn.query(query, (err, rows, fields) => {
+            if (err) return res.status(404).send('Unable to get stats.' + err);
+            stats.products = rows;
+
+            query = 'SELECT Flavors.fid, Flavors.name, Flavors.price, COUNT(Customized_Flavors.cfid) as n_sold \
+                    FROM Flavors INNER JOIN Customized_Flavors \
+                    ON Flavors.fid = Customized_Flavors.fid GROUP BY Flavors.fid; ';
+
+            sqlconn.query(query, (err, rows, fields) => {
+                if (err) return res.status(404).send('Unable to get stats.' + err);
+                stats.flavors = rows;
+
+                query = "SELECT COUNT(*) as count, SUM(total_price) as total_price, \
+                        DATE_FORMAT(date_time, '%Y-%m-%d') AS date FROM User_Orders \
+                        WHERE DATEDIFF(NOW(), DATE(date_time)) < 31 \
+                        GROUP BY DATE_FORMAT(date_time, '%Y-%m-%d')";
+
+                sqlconn.query(query, (err, rows, fields) => {
+                    if (err) return res.status(404).send('Unable to get stats.' + err);
+                    stats.orders_month = rows;
+
+                    query = "SELECT COUNT(*) as count, SUM(total_price) as total_price, \
+                            DATE_FORMAT(date_time, '%Y-%m') AS date FROM User_Orders \
+                            WHERE DATEDIFF(NOW(), DATE(date_time)) < 366 \
+                            GROUP BY DATE_FORMAT(date_time, '%Y-%m')";
+
+                    sqlconn.query(query, (err, rows, fields) => {
+                        if (err) return res.status(404).send('Unable to get stats.' + err);
+                        stats.orders_year = rows;
+
+                        return res.status(200).send(stats);
+                
+                    });
+                });
+            });
+        });
     });
 });
 
 router.get('/products', authEmployeeToken, (req, res) => {
 
-    query = 'SELECT Products.pid, Products.name, Products.price, COUNT(User_Order_Lines.uolid) as n_sold\
+    query = 'SELECT Products.pid, Products.name, Products.price, \
+            COUNT(User_Order_Lines.uolid) as n_sold\
             FROM Products INNER JOIN User_Order_Lines \
             ON Products.pid = User_Order_Lines.pid GROUP BY Products.pid; ';
 
@@ -33,7 +75,8 @@ router.get('/products', authEmployeeToken, (req, res) => {
 
 router.get('/flavors', authEmployeeToken, (req, res) => {
 
-    query = 'SELECT Flavors.fid, Flavors.name, Flavors.price, COUNT(Customized_Flavors.cfid) as n_sold \
+    query = 'SELECT Flavors.fid, Flavors.name, Flavors.price, \
+            COUNT(Customized_Flavors.cfid) as n_sold \
             FROM Flavors INNER JOIN Customized_Flavors \
             ON Flavors.fid = Customized_Flavors.fid GROUP BY Flavors.fid; ';
 
