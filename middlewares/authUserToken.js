@@ -18,7 +18,6 @@ function authUserToken(req, res, next) {
         next();
     }
     catch (e) {
-        console.log(e);
         res.status(400).send('Invalid token.');
     }
 }

@@ -187,7 +187,7 @@ router.post('/', authUserToken, async (req, res) => {
     let totalPrice = 0;
     cart.forEach(product => totalPrice += product.price);
     
-    if (req.body.ccard == null) {
+    if (req.body.ccard === null) {
         query = 'INSERT INTO User_Orders (uid, del_address, phone_number, date_time, total_price) \
             VALUES ('+ sqlconn.escape(uid) + ','
             + sqlconn.escape(del_address) + ','
@@ -216,6 +216,7 @@ router.post('/', authUserToken, async (req, res) => {
                 connection.rollback(()=>{
                     connection.release();
                 });
+
                 return res.status(500).send('Unable to complete order. ' + err);
             }
             else{
