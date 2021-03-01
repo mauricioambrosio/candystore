@@ -128,8 +128,6 @@ router.put('/cancel/:id', authUserToken, (req, res) => {
 router.put('/status/:id', authEmployeeToken, (req, res) => {
     const {error} = validateStatusPut(req.body);
     
-    console.log("req.body", req.body);
-    console.log("error", error);
 
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -176,9 +174,6 @@ router.post('/', authUserToken, async (req, res) => {
 
     const uid = req.user.uid;
     const date_time = moment().format("YYYY-MM-DD HH:mm:ss").toString();
-
-
-    console.log(date_time);
 
     const orderIsValid = await isOrderValid(cart);
 

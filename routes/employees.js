@@ -22,8 +22,6 @@ router.post('/', authAdminToken, async (req, res) => {
 
     newEmployee = _.pick(req.body, ['email', 'password', 'firstname', 'lastname']);
 
-    console.log(await employeeEmailExists(newEmployee.email));
-
     if (await employeeEmailExists(newEmployee.email))
         return res.status(400).send('Email already being used.');
     else {

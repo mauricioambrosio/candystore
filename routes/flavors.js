@@ -65,7 +65,7 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
     sqlconn.getConnection((err, connection)=>{
         connection.beginTransaction((err)=>{
             if(err){
-                console.log("LEVEL 0", err);
+                
                 connection.rollback(()=>{
                     connection.release();
                 });
@@ -76,7 +76,7 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                 query = 'DELETE FROM Ingredients_Flavors WHERE fid =' + connection.escape(fid);
                 connection.query(query, (err, rows, fields)=> {
                     if (err) {
-                        console.log("LEVEL 1", err);
+                        
                         connection.rollback(() => {
                             connection.release();
                         });
@@ -87,7 +87,6 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                         if (ingredients.length < 1) {
                             connection.commit((err) => {
                                 if (err) {
-                                    console.log("LEVEL 2", err);
                                     return connection.rollback(() => res.status(500).send('Database error. ' + err));
                                 }
                                 return res.status(200).send('Ingredients updated.');
@@ -103,7 +102,6 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                             }
                             connection.query(query, (err, rows, fields) => {
                                 if (err) {
-                                    console.log("LEVEL 3", err);
                                     connection.rollback(() => {
                                         connection.release();
                                     });
@@ -112,7 +110,6 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
 
                                 connection.commit((err) => {
                                     if (err) {
-                                        console.log("LEVEL 4", err);
                                         return connection.rollback(() => res.status(500).send('Database error. ' + err));
                                     }
                                     connection.release();
