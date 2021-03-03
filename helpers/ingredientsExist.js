@@ -1,5 +1,6 @@
 const sqlconn = require('../helpers/sqlconn');
 
+// check if engredients exist in the database
 function ingredientsExist(ingredients) {
     return new Promise((resolve, reject) => {
 

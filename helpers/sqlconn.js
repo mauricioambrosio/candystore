@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const config = require('config');
 
+// mysql config params for connection pool
 mysqlConfig = {
     host: config.get("mysqlHost"),    
     user: config.get('mysqlUser'),
@@ -10,7 +11,7 @@ mysqlConfig = {
     multipleStatements: true
 };
 
-    
+// mysql connection pool used throughout the project
 const sqlconn = mysql.createPool(mysqlConfig);
 sqlconn.getConnection(function(err, connection) {
     if (err) console.log('Could not connect to MySQL...', err); // not connected!

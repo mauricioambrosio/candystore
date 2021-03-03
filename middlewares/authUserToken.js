@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const constants = require('../helpers/constants');
 
+// middleware to check if request comes from authenticated user based on json web token provided in header
 function authUserToken(req, res, next) {
 
     const token = req.header(constants.X_AUTH_TOKEN);
@@ -9,8 +10,8 @@ function authUserToken(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, config.get('jwtPrivateKey'));
-        //let rid = -1;
-        //if (req.employee !== undefined) rid = req.employee.rid;
+        
+        // check if uid (user id) exists
         if (!decoded.uid) return res.status(403).send('Access denied. Not allowed to perform operation.');
 
         req.user = decoded;

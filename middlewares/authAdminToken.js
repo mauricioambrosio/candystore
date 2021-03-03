@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const constants = require('../helpers/constants');
 
+// middleware to check if request comes from authenticated admin employee based on json web token provided in header
 function authAdminToken(req, res, next) {
 
     const token = req.header(constants.X_AUTH_TOKEN);
@@ -9,7 +10,9 @@ function authAdminToken(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, config.get('jwtPrivateKey'));
-        if (decoded.rid !== constants.ADMIN_ID) return res.status(403).send('Access denied. Not allowed to perform operation.');
+        
+        // check if eid (employee id) exists and if rid (role id) of employee is equal to predifined admin id
+        if (!decoded.eid || decoded.rid !== constants.ADMIN_ID) return res.status(403).send('Access denied. Not allowed to perform operation.');
 
         req.employee = decoded;
 

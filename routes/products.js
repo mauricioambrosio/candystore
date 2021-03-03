@@ -8,8 +8,8 @@ const ingredientsExist = require('../helpers/ingredientsExist');
 
 const _ = require('lodash');
 
+// get all products
 router.get('/', (req, res) => {
-
     query = 'SELECT * FROM Products';
 
     sqlconn.query(query, function (err, rows, fields) {
@@ -18,6 +18,7 @@ router.get('/', (req, res) => {
     });
 });
 
+// get product based on id
 router.get('/:id', (req, res) => {
     const pid = req.params.id;
 
@@ -30,6 +31,7 @@ router.get('/:id', (req, res) => {
     });
 });
 
+// get ingredients in product based on product id
 router.get('/ingredients/:id', (req, res) => {
     const pid = req.params.id;
 
@@ -44,26 +46,33 @@ router.get('/ingredients/:id', (req, res) => {
     });
 });
 
+// remove existing ingredients and add new ingredients for product
 router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
 
+    // validate body
     const { error } = validateIngredientPost(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
     const pid = req.params.id;
     const ingredients = req.body.list
 
+    // query to check if product exist
     let query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
     let product;
+
+    // execute query
     sqlconn.query(query, (err, rows, fields)=> {
         product = rows[0];
         if (!product) return res.status(400).send('Product does not exist.');
     });
 
+    // check if ingredients exist
     const ingredientsAreValid = await ingredientsExist(ingredients);
-
     if (!ingredientsAreValid) return res.status(400).send('Invalid ingredients.')
 
+    // get a connection from connection pool
     sqlconn.getConnection((err, connection)=>{
+        // start transaction
         connection.beginTransaction((err)=>{
             if(err){
                 connection.rollback(()=>{
@@ -72,8 +81,9 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                 return res.status(500).send('Database error. ' + err);
             }
             else{
-            
+                // query to delete existing ingredients in product
                 query = 'DELETE FROM Ingredients_Products WHERE pid =' + connection.escape(pid);
+                // exectue query
                 connection.query(query, (err, rows, fields)=> {
                     if (err) {
                         connection.rollback(() => {
@@ -82,23 +92,28 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                         return res.status(500).send('Database error. ' + err);
                     }
                     else {
-
+                        // if no ingredients to add, commit
                         if (ingredients.length < 1) {
+                            // commit transaction
                             connection.commit((err) => {
                                 if (err) {
                                     return connection.rollback(() => res.status(500).send('Database error. ' + err));
                                 }
                                 return res.status(200).send('Ingredients updated.');
                             });
-                        } else {
+                        } 
+                        // if there are ingredients to add
+                        else {
+                            // query to insert new ingredients
                             query = 'INSERT INTO Ingredients_Products (pid, iid) VALUES ';
-
+                            // add ingredients to query
                             for (i = 0; i < ingredients.length; i++) {
                                 query += '(' + connection.escape(pid) + ',' + connection.escape(ingredients[i]) + ')'
 
                                 if (i === ingredients.length - 1) query += ';';
                                 else query += ',';
                             }
+                            // execute query
                             connection.query(query, (err, rows, fields) => {
                                 if (err) {
                                     connection.rollback(() => {
@@ -106,7 +121,7 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
                                     });
                                     return res.status(500).send('Database error. ' + err);
                                 }
-
+                                // commit transaction
                                 connection.commit((err) => {
                                     if (err) {
                                         return connection.rollback(() => res.status(500).send('Database error. ' + err));
@@ -123,23 +138,29 @@ router.post('/ingredients/:id', authEmployeeToken, async (req, res) => {
     });
 });
 
-
+// restore flavor by changing it's active value to 1
 router.post('/:id', authEmployeeToken, (req, res) => {
     const pid = req.params.id;
+    // query to check if flavor exist
     query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
 
+    // execute query
     sqlconn.query(query, (err, rows, fields) => {
         product = rows[0];
         if (!product) return res.status(400).send('Product does not exist.');
         
         else {
+            // update product active value to 1
             query = 'UPDATE Products SET \
                     active = 1 WHERE pid=' + sqlconn.escape(pid);
+            // execute query
             sqlconn.query(query, (err, rows, fields) => {
                 if (err) return res.status(500).send('Unable to update.' + err);
 
+                // query to get updated product
                 query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
                 
+                // execute query
                 sqlconn.query(query, function (err, rows, fields) {
                     product = rows[0];
                     return res.status(200).send(product);
@@ -149,23 +170,30 @@ router.post('/:id', authEmployeeToken, (req, res) => {
     }); 
 });
 
-
+// delete product by changing it's active value to 0
 router.delete('/:id', authEmployeeToken, (req, res) => {
     const pid = req.params.id;
+    // query to check if product exist
     query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
 
+    // execute query
     sqlconn.query(query, (err, rows, fields) => {
         product = rows[0];
         if (!product) return res.status(400).send('Product does not exist.');
         
         else {
+            // update product active value to 0
             query = 'UPDATE Products SET \
                     active = 0 WHERE pid=' + sqlconn.escape(pid);
+            
+            // execute query
             sqlconn.query(query, (err, rows, fields) => {
                 if (err) return res.status(500).send('Unable to update.' + err);
 
+                // query to get updated product
                 query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
                 
+                // execute query
                 sqlconn.query(query, function (err, rows, fields) {
                     product = rows[0];
                     return res.status(200).send(product);
@@ -176,10 +204,10 @@ router.delete('/:id', authEmployeeToken, (req, res) => {
 });
 
 
-
-//Include ingredients
+// post product
 router.post('/', authEmployeeToken, (req, res) => {
-    const { error } = validatePost(req.body); //result.error
+    // validate body
+    const { error } = validatePost(req.body); 
     if (error) return res.status(400).send(error.details[0].message);
 
     const product = {
@@ -187,18 +215,22 @@ router.post('/', authEmployeeToken, (req, res) => {
         price: req.body.price
     }
 
+    // query to insert product
     query = 'INSERT INTO Products (name,price) \
             VALUES ('+
             sqlconn.escape(product.name) + ',' +
             sqlconn.escape(product.price) + '); \
             SELECT LAST_INSERT_ID();';
 
+    // execute query
     sqlconn.query(query, function (err, rows, fields) {
         if (err) return res.status(500).send('Unable to insert.' + err);
         
         const pid = rows[0].insertId;
-        query = 'SELECT * FROM Products WHERE pid = ' + sqlconn.escape(pid);
         
+        // query to get inserted product
+        query = 'SELECT * FROM Products WHERE pid = ' + sqlconn.escape(pid);
+        // execute query
         sqlconn.query(query, function (err, rows, fields) {
             const product = rows[0];
             return res.status(200).send(product);
@@ -207,20 +239,25 @@ router.post('/', authEmployeeToken, (req, res) => {
 });
 
 router.put('/:id', authEmployeeToken, (req, res) => {
-    const { error } = validatePut(req.body); //result.error
+    // validate body
+    const { error } = validatePut(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
     const pid = req.params.id;
 
     updatedProduct = _.pick(req.body, ['name', 'price']);
 
+    // query to check if flavor exist
     query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
 
     let product;
+    // execute query
     sqlconn.query(query, function (err, rows, fields) {
         product = rows[0];
         if (!product) return res.status(400).send('Product does not exist.');
+        
         else  {
+            // if body does not include a field, take its current value in the database
             if (updatedProduct.name == null) updatedProduct.name = product.name;
             if (updatedProduct.price == null) updatedProduct.price = product.price;
 
@@ -232,6 +269,7 @@ router.put('/:id', authEmployeeToken, (req, res) => {
             sqlconn.query(query, function (err, rows, fields) {
                 if (err) return res.status(500).send('Unable to update.' + err);
 
+                // query to get updated product
                 query = 'SELECT * FROM Products WHERE pid=' + sqlconn.escape(pid);
                 
                 sqlconn.query(query, function (err, rows, fields) {
@@ -243,6 +281,7 @@ router.put('/:id', authEmployeeToken, (req, res) => {
     });
 });
 
+// ingredient post validator
 function validateIngredientPost(ingredients) {
     const schema = {
         list: Joi.array().items(Joi.number()).required()
@@ -250,7 +289,7 @@ function validateIngredientPost(ingredients) {
     return Joi.validate(ingredients, schema);
 }
 
-//Include ingredients
+// post validator
 function validatePost(product) {
     const schema = {
         name: Joi.string().max(64).required(),
@@ -259,6 +298,7 @@ function validatePost(product) {
     return Joi.validate(product, schema);
 }
 
+// put validator
 function validatePut(product) {
     const schema = {
         name: Joi.string().max(64).allow(null),

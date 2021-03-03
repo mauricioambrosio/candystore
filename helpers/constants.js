@@ -1,3 +1,4 @@
+// common constants used throughout the project
 module.exports.CUSTOMIZED_ID = 0;
 module.exports.ADMIN_ID = 2;
 module.exports.X_AUTH_TOKEN = 'x-auth-token';

@@ -18,18 +18,18 @@ const home = require('./routes/home');
 const express = require('express');
 const cors = require('cors');
 
-
+// check if jwtPrivateKey is defined
 if (!config.get('jwtPrivateKey')) {
     console.error('FATAL ERROR: jwtPrivateKey is not defined.');
     process.exit(1);
 }
 
-
+// print uncaught exception scenario
 process.on('uncaughtException', (ex) => {
     console.log('UNCAUGHT EXCEPTION. ' + ex);
 });
 
-
+// print unhandled rejection scenario
 process.on('unhandledRejection', (ex) => {
     console.log('UNHANDLED REJECTION. ' + ex);
 });
@@ -37,13 +37,21 @@ process.on('unhandledRejection', (ex) => {
 
 const app = express();
 
+// use json on body of requests
 app.use(express.json());
+// use url encoded
 app.use(express.urlencoded({ extended: true }));
+
+// use static as public
 app.use(express.static('public'));
 
+// use helmet to increase secutiry
 app.use(helmet());
+
+// define cross-origin resource sharing
 app.use(cors());
 
+// add routes
 app.use('/', home);
 app.use('/api/stats', stats);
 app.use('/api/reviews', reviews);
@@ -55,6 +63,7 @@ app.use('/api/users', users);
 app.use('/api/employees', employees);
 app.use('/api/login', login);
 
+// use morgan in development environment
 if (app.get('env') === 'development') {
     app.use(morgan('tiny'));
     debug('Morgan enabled...');

@@ -2,6 +2,7 @@ const moment = require('moment');
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
+const _ = require('lodash');
 
 const constants = require('../helpers/constants');
 const authEmployeeToken = require('../middlewares/authEmployeeToken');
@@ -10,14 +11,12 @@ const authAdminToken = require('../middlewares/authAdminToken');
 const {isOrderValid, addPrices} = require('../helpers/orderHelpers');
 
 const sqlconn = require('../helpers/sqlconn');
-
-const _ = require('lodash');
-
 const sortList = require("../helpers/sortList");
 
-
+// get orders
 router.get('/', authEmployeeToken, (req, res) => {
 
+    // query to get orders with data joined from all relevant tables
     query = 'SELECT User_Orders.uoid as uoid, Users.firstname, Users.lastname, \
             User_Orders.uid as uid, date_time, total_price, del_address, status, \
             User_Orders.phone_number as phone_number, User_Order_Lines.uolid as uolid, Products.pid as pid, amount, \
@@ -30,22 +29,22 @@ router.get('/', authEmployeeToken, (req, res) => {
             ON Customized_Flavors.fid = Flavors.fid \
             ORDER BY User_Orders.uoid DESC, User_Orders.date_time DESC;';
 
+    // execute query
     sqlconn.query(query, (err, rows, fields) => {
         if (err) return res.status(404).send('Unable to get orders. ' + err);
-
+        // format orders
         userOrders = formatUserOrders(rows);
+        // sort orders based on user order id 
         const sortedUserOrders = sortList(Object.values(userOrders), true, "uoid");
-
+        // send orders
         return res.status(200).send(sortedUserOrders);
     });
 });
 
-
+// get orders from the current authenticated user
 router.get('/me', authUserToken, (req, res) => {
 
-    // query = 'SELECT * FROM User_Orders WHERE uid='+ sqlconn.escape(req.user.uid) +
-    //         ' ORDER BY User_Orders.date_time DESC, User_Orders.uoid DESC;';
-
+    // query to get orders with data joined from all relevant tables
     query = 'SELECT User_Orders.uoid as uoid, Users.firstname, Users.lastname, \
             User_Orders.uid as uid, date_time, total_price, del_address, status, \
             User_Orders.phone_number as phone_number, User_Order_Lines.uolid as uolid, Products.pid as pid, amount, \
@@ -58,18 +57,22 @@ router.get('/me', authUserToken, (req, res) => {
             ON Customized_Flavors.fid = Flavors.fid WHERE User_Orders.uid=' + sqlconn.escape(req.user.uid) +
             ' ORDER BY User_Orders.uoid DESC, User_Orders.date_time DESC;';
 
+    // execute query
     sqlconn.query(query, (err, rows, fields) => {
         if (err) return res.status(404).send('Unable to get orders. ' + err);
-
-        userOrders = formatUserOrders(rows);        
+        // format orders
+        userOrders = formatUserOrders(rows);    
+        // sort orders based on user order id
         const sortedUserOrders = sortList(Object.values(userOrders), true, "uoid");
-
+        // send orders
         return res.status(200).send(sortedUserOrders);
     });
 });
 
-
+// get order based on id
 router.get('/:id', authEmployeeToken, (req, res) => {
+
+    // query to get order with data joined from all relevant tables
     query = 'SELECT User_Orders.uoid as uoid, Users.firstname, Users.lastname, \
             User_Orders.uid as uid, date_time, total_price, del_address, status, \
             User_Orders.phone_number as phone_number, User_Order_Lines.uolid as uolid, Products.pid as pid, amount, \
@@ -81,41 +84,48 @@ router.get('/:id', authEmployeeToken, (req, res) => {
             ON User_Order_Lines.uolid = Customized_Flavors.uolid LEFT JOIN Flavors \
             ON Customized_Flavors.fid = Flavors.fid WHERE User_Orders.uoid='+ sqlconn.escape(req.params.id) + ';';
     
+    // execute query
     sqlconn.query(query, (err, rows, fields) => {
         if (err) return res.status(404).send('Unable to get orders. ' + err);
-        
+        // format order
         userOrders = formatUserOrders(rows);
-        
+        // send order
         return res.status(200).send(userOrders[req.params.id]);
     });
 });
 
-
+// change order status to cancelled
+// only order owner can perform this operation
 router.put('/cancel/:id', authUserToken, (req, res) => {
     
     const uoid = req.params.id;
     
+    // query to check if order exists
     query = 'SELECT * FROM User_Orders WHERE uoid = ' + sqlconn.escape(uoid);
 
     let order;
+    // execute query
     sqlconn.query(query, function (err, rows, fields) {
         order = rows[0];
         if (!order) return res.status(400).send('Order does not exist.');
         else  {
+            // if order does not belong to current user
             if (req.user.uid !== order.uid) return res.status(403).send('Access denied. Not allowed to perform operation.');
 
+            // query to change order status to cancelled and employee id of the status changer to null 
             query = 'UPDATE User_Orders SET \
                     status = "Cancelled", status_changer_eid = \
                     NULL WHERE uoid = ' + sqlconn.escape(uoid);
 
+            // execute query
             sqlconn.query(query, function (err, rows, fields) {
                 if (err) return res.status(500).send('Unable to update.' + err);
-
+                // query to get updated order
                 query = 'SELECT * FROM User_Orders WHERE uoid=' + sqlconn.escape(uoid);
-                
+                // execute query
                 sqlconn.query(query, function (err, rows, fields) {
-
                     order = rows[0];
+                    // send order
                     return res.status(200).send(order);
                 });
             });
@@ -123,8 +133,7 @@ router.put('/cancel/:id', authUserToken, (req, res) => {
     });
 });
 
-
-
+// change order status
 router.put('/status/:id', authEmployeeToken, (req, res) => {
     const {error} = validateStatusPut(req.body);
     
@@ -134,26 +143,29 @@ router.put('/status/:id', authEmployeeToken, (req, res) => {
     const uoid = req.params.id;
     updatedOrder = _.pick(req.body, ['status']);
 
+    // query to check if order exists
     query = 'SELECT * FROM User_Orders WHERE uoid = ' + sqlconn.escape(uoid);
 
     let order;
+    // execute query
     sqlconn.query(query, function (err, rows, fields) {
         order = rows[0];
         if (!order) return res.status(400).send('Order does not exist.');
         else  {
-            
+            // query to change order status to cancelled and employee id of the status changer to the employee id
             query = 'UPDATE User_Orders SET \
                     status = ' + sqlconn.escape(updatedOrder.status) +
                     ', status_changer_eid = ' + sqlconn.escape(req.employee.eid) +
                     ' WHERE uoid = ' + sqlconn.escape(uoid);
 
+            // execute query
             sqlconn.query(query, function (err, rows, fields) {
                 if (err) return res.status(500).send('Unable to update.' + err);
-
+                // query to get updated order
                 query = 'SELECT * FROM User_Orders WHERE uoid=' + sqlconn.escape(uoid);
                 
+                // execute query
                 sqlconn.query(query, function (err, rows, fields) {
-
                     order = rows[0];
                     return res.status(200).send(order);
                 });
@@ -164,9 +176,10 @@ router.put('/status/:id', authEmployeeToken, (req, res) => {
 
 
 router.post('/', authUserToken, async (req, res) => {
-    
-    const { error } = validatePost(req.body); //result.error
+    // validate post
+    const { error } = validatePost(req.body);
     if (error) return res.status(400).send(error.details[0].message);
+
 
     let cart = req.body.cart;
     const del_address = req.body.del_address;
@@ -175,18 +188,24 @@ router.post('/', authUserToken, async (req, res) => {
     const uid = req.user.uid;
     const date_time = moment().format("YYYY-MM-DD HH:mm:ss").toString();
 
+    // check if order is valid
     const orderIsValid = await isOrderValid(cart);
-
     if (!orderIsValid) return res.status(400).send('Invalid products or flavors.');
 
     let query;
-    
+    // add prices to order lines in cart
     cart = await addPrices(cart);
+    // if unable to add prices
     if (cart === false) return res.status(500).send('Internal server error.');
 
     let totalPrice = 0;
+    // calculate total price of cart
     cart.forEach(product => totalPrice += product.price);
     
+
+    /* query to insert order */
+
+    // if no credit card is provided 
     if (req.body.ccard === null) {
         query = 'INSERT INTO User_Orders (uid, del_address, phone_number, date_time, total_price) \
             VALUES ('+ sqlconn.escape(uid) + ','
@@ -195,7 +214,9 @@ router.post('/', authUserToken, async (req, res) => {
             + sqlconn.escape(date_time) + ','
             + sqlconn.escape(totalPrice) + ');\
             SELECT LAST_INSERT_ID();';
-    } else {
+    } 
+    // if credit card is provided
+    else {
         const cc_number = req.body.ccard.cc_number;
         let cc_expdate = req.body.ccard.cc_expdate;
         cc_expdate = moment(cc_expdate, 'YYYY-MM').format().toString();
@@ -210,7 +231,10 @@ router.post('/', authUserToken, async (req, res) => {
             + sqlconn.escape(totalPrice) + ');\
             SELECT LAST_INSERT_ID();';
     }
+
+    // get a connection from connection pool
     sqlconn.getConnection((err, connection)=>{
+        // start transaction
         connection.beginTransaction((err)=>{
             if(err){
                 connection.rollback(()=>{
@@ -220,6 +244,7 @@ router.post('/', authUserToken, async (req, res) => {
                 return res.status(500).send('Unable to complete order. ' + err);
             }
             else{
+                // execute order
                 connection.query(query, (err, rows, fields)=>{
                     if (err) {                        
                         connection.rollback(() => {
@@ -228,8 +253,10 @@ router.post('/', authUserToken, async (req, res) => {
                         return res.status(500).send('Unable to complete order. ' + err);
                     }
                     else {
-                        const uoid = rows[0].insertId;
+
+                        const uoid = rows[0].insertId; // id of inserted order
                         
+                        // query to insert order lines
                         query = 'INSERT INTO User_Order_Lines (uoid, pid, amount, price) VALUES ';
                         for (i = 0; i < cart.length; i++) {
                             query += '(' + connection.escape(uoid) + ',' + connection.escape(cart[i].pid) + ',' + 
@@ -239,20 +266,23 @@ router.post('/', authUserToken, async (req, res) => {
                             else query += ',';
                         }
 
+                        // execute query
                         connection.query(query, async (err, rows, fields) => {
                             if (err){                                
                                 connection.rollback(() => {
                                     connection.release();
                                 });
                                 return res.status(500).send('Database error. ' + err);
-                            } else {
-
+                            } 
+                            else {
+                                // query to get inserted order lines of customized product
                                 query = 'SELECT * FROM User_Order_Lines WHERE uoid=' + connection.escape(uoid) + ' AND pid=' + constants.CUSTOMIZED_ID + ';';
 
+                                // execute query
                                 connection.query(query, (err, rows, fields) => {
                                     const customProducts = cart.filter(product => product.pid===constants.CUSTOMIZED_ID);
                                     const userOrderLines = rows;
-                                    
+                                    // if length of retrieved order lines different from previously inserted order lines 
                                     if(err || userOrderLines.length !== customProducts.length){
                                         connection.rollback(() => {
                                             connection.release();
@@ -260,10 +290,10 @@ router.post('/', authUserToken, async (req, res) => {
                                         return res.status(500).send('Database error. ' + err);
                                     }
                                     else{
-
+                                        // query to insert flavors
                                         query = 'INSERT INTO Customized_Flavors (uolid, fid) VALUES';            
                                         const insertedFlavors = [];
-                            
+                                        // add flavors to query
                                         for (i = 0; i < userOrderLines.length; i++) {
                                             for (j = 0; j < customProducts[i].flavors.length; j++ ){
                                                 const flavor = customProducts[i].flavors[j];
@@ -275,7 +305,7 @@ router.post('/', authUserToken, async (req, res) => {
                                             if ( i === userOrderLines.length - 1 ) query += ';';
                                             else if (customProducts[i+1].flavors.length !== 0) query += ',';
                                         }
-                                        
+                                        // if no flavors, commit transaction
                                         if (insertedFlavors.length===0){
 
                                             connection.commit((err) => {
@@ -287,14 +317,16 @@ router.post('/', authUserToken, async (req, res) => {
                                             });
                                        
                                         } else {
-                                            
+                                            // execute query
                                             connection.query(query, (err, rows, fields) => {
                                                 if (err){                                                    
                                                     connection.rollback(() => {
                                                         connection.release();
                                                     });
                                                     return res.status(500).send('Database error. ' + err);
-                                                } else{
+                                                } 
+                                                // commit transaction
+                                                else{
                                                     connection.commit((err) => {
                                                         if (err) {
                                                             return connection.rollback(() => res.status(500).send('Database error. ' + err));
@@ -316,12 +348,12 @@ router.post('/', authUserToken, async (req, res) => {
     });
 });
 
-
+// format user orders
 function formatUserOrders(orders){
     const userOrders = {};
 
     orders.forEach(order => {
-        
+        // add order fields
         if (!(order.uoid in userOrders)) {
             userOrders[order.uoid] = 
                 {uoid:order.uoid, 
@@ -337,7 +369,7 @@ function formatUserOrders(orders){
                 status: order.status,
                 order_lines: {}};
         }
-        
+        // add order line fields
         if(!(order.uolid in userOrders[order.uoid].order_lines)) {
             userOrders[order.uoid].order_lines[order.uolid] =
                 {uolid: order.uolid,
@@ -348,7 +380,7 @@ function formatUserOrders(orders){
                 image: order.image,
                 flavors: []};
         }
-
+        // add flavor fields
         if (order.fid) {
             userOrders[order.uoid].order_lines[order.uolid].flavors.push({
                 fid: order.fid,
@@ -359,6 +391,7 @@ function formatUserOrders(orders){
     return userOrders;
 }
 
+// status put validator
 function validateStatusPut(status){
     const schema = {
         status: Joi.string().valid("Cancelled", "Open", "Processed").required()
@@ -366,7 +399,7 @@ function validateStatusPut(status){
     return Joi.validate(status, schema);
 }
 
-
+// post validator
 function validatePost(order) {
     const schema = {
         cart: Joi.array().items(Joi.object().keys({

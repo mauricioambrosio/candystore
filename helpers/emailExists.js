@@ -1,11 +1,16 @@
+// check if email already exists in users or employees table
 const sqlconn = require('../helpers/sqlconn');
 
 async function emailExists(email) {
-    if (await userEmailExists(email) || await employeeEmailExists(email))
+    if (
+        await userEmailExists(email) 
+        || await employeeEmailExists(email)
+    )
         return true;
     else return false;
 }
 
+// check if email already exists in users table
 async function userEmailExists(email) {
     promiseRes = await new Promise((resolve, reject) => {
         query = 'SELECT * FROM Users WHERE email=' + sqlconn.escape(email);
@@ -18,6 +23,7 @@ async function userEmailExists(email) {
     return promiseRes;
 }
 
+// check if email already exists in employees table
 async function employeeEmailExists(email) {
     promiseRes = await new Promise((resolve, reject) => {
         query = 'SELECT * FROM Employees WHERE email=' + sqlconn.escape(email);

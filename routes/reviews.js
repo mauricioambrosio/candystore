@@ -5,10 +5,9 @@ const Review = require('../models/review');
 const authUserToken = require('../middlewares/authUserToken');
 const sqlconn = require('../helpers/sqlconn');
 
-//const mongoconn = require('../helpers/mongoconn');
 const _ = require('lodash');
 
-
+// get all reviews
 router.get('/', async (req, res) => {
 
     let reviews = await Review.find().sort({ datetime: -1 });
@@ -19,7 +18,7 @@ router.get('/', async (req, res) => {
     res.status(200).send(reviews);
 });
 
-
+// get review based on id
 router.get('/:id', async (req, res) => {
 
     const rid = req.params.id;
@@ -32,6 +31,7 @@ router.get('/:id', async (req, res) => {
 
 });
 
+// get all reviews of a product based on product id
 router.get('/pid/:id', async (req, res) => {
 
     const pid = req.params.id;
@@ -44,7 +44,7 @@ router.get('/pid/:id', async (req, res) => {
     res.status(200).send(reviews);
 });
 
-
+// append user info to review
 function appendUser(review) {
     return new Promise((resolve, reject) => {
         const fullReview = _.pick(review, ['_id', 'uid', 'pid', 'score', 'text']);
@@ -58,7 +58,7 @@ function appendUser(review) {
     });
 }
 
-
+// get all reviews of a user based on user id
 router.get('/uid/:id', async (req, res) => {
 
     const uid = req.params.id;
@@ -73,11 +73,13 @@ router.get('/uid/:id', async (req, res) => {
 
 });
 
-
+// post review
+// only authenticated users can post reviews
 router.post('/', authUserToken, async (req, res) => {
-    
+    // validate post
     const { error } = validatePost(req.body); //result.error
     if (error) return res.status(400).send(error.details[0].message)
+    
     const review = new Review({
         uid: req.user.uid,
         pid: req.body.pid,
@@ -91,6 +93,7 @@ router.post('/', authUserToken, async (req, res) => {
     });
 });
 
+// post validator
 function validatePost(review) {
     const schema = {
         pid: Joi.number().required(),
@@ -99,7 +102,6 @@ function validatePost(review) {
     }
     return Joi.validate(review, schema);
 }
-
 
 /*
 router.put('/:id', authEmployeeToken, (req, res)=>{

@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const config = require('config');
 
-
+// generate json web token for types: user or employee
 function genToken(entity, type) {
     var token;
-    if (type == 'user') {
+    // sign user type token
+    if (type === 'user') {
 
         const user = entity;
 
@@ -13,7 +14,9 @@ function genToken(entity, type) {
             config.get('jwtPrivateKey'));
         return token;
 
-    } else if (type == 'employee') {
+    } 
+    // sign employee type token
+    else if (type === 'employee') {
 
         const employee = entity;
 
@@ -22,16 +25,6 @@ function genToken(entity, type) {
             config.get('jwtPrivateKey'));
         return token;
     }
-
-    /*else if (type == 'admin') {
-
-        const employee = entity;
-
-        token = jwt.sign(
-            { eid: employee.eid, email: employee.email, role: employee.role },
-            config.get('jwtPrivateKey'));
-        return token;
-    }*/
 
     return console.log("Internal server error. Invalid type provided to genToken.");
 }
