@@ -96,6 +96,11 @@ async function addPrices(cart){
         }
         query += ')';
 
+        //
+        console.log(query);
+        //
+
+
         // dictionaries for product and flavor prices
         let productPrices = {};
         let flavorPrices = {};
@@ -112,10 +117,10 @@ async function addPrices(cart){
             // array for flavors in cart  
             const cartFlavors = [] 
         
-            // add flavors from each orider line present in cart to the cartFlavors array
+            // add flavors from each order line present in cart to the cartFlavors array
             cart.forEach(product=>{
                 product.flavors.forEach(flavor => {                    
-                    if( !(flavor in cartFlavors) ) cartFlavors.push(flavor);
+                    if( !cartFlavors.includes(flavor) ) cartFlavors.push(flavor);
                 });
             }); 
 

@@ -198,6 +198,7 @@ router.post('/', authUserToken, async (req, res) => {
     // if unable to add prices
     if (cart === false) return res.status(500).send('Internal server error.');
 
+
     let totalPrice = 0;
     // calculate total price of cart
     cart.forEach(product => totalPrice += product.price);
@@ -240,7 +241,7 @@ router.post('/', authUserToken, async (req, res) => {
                 connection.rollback(()=>{
                     connection.release();
                 });
-
+                console.log(err);
                 return res.status(500).send('Unable to complete order. ' + err);
             }
             else{
@@ -250,6 +251,7 @@ router.post('/', authUserToken, async (req, res) => {
                         connection.rollback(() => {
                             connection.release();
                         });
+                        console.log(err);
                         return res.status(500).send('Unable to complete order. ' + err);
                     }
                     else {
@@ -272,6 +274,7 @@ router.post('/', authUserToken, async (req, res) => {
                                 connection.rollback(() => {
                                     connection.release();
                                 });
+                                console.log(err);
                                 return res.status(500).send('Database error. ' + err);
                             } 
                             else {
@@ -287,6 +290,7 @@ router.post('/', authUserToken, async (req, res) => {
                                         connection.rollback(() => {
                                             connection.release();
                                         });
+                                        console.log(err);
                                         return res.status(500).send('Database error. ' + err);
                                     }
                                     else{
@@ -323,12 +327,14 @@ router.post('/', authUserToken, async (req, res) => {
                                                     connection.rollback(() => {
                                                         connection.release();
                                                     });
+                                                    console.log(err);
                                                     return res.status(500).send('Database error. ' + err);
                                                 } 
                                                 // commit transaction
                                                 else{
                                                     connection.commit((err) => {
                                                         if (err) {
+                                                            console.log(err);
                                                             return connection.rollback(() => res.status(500).send('Database error. ' + err));
                                                         }
                                                         connection.release();
