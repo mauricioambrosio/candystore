@@ -10,7 +10,7 @@ const _ = require('lodash');
 // get all reviews
 router.get('/', async (req, res) => {
 
-    let reviews = await Review.find().sort({ datetime: -1 });
+    let reviews = await Review.find().sort({ createdAt: -1 });
 
     for (i in reviews) {
         reviews[i] = await appendUser(reviews[i]);
@@ -36,7 +36,7 @@ router.get('/pid/:id', async (req, res) => {
 
     const pid = req.params.id;
 
-    let reviews = await Review.find({ pid: pid }).sort({ datetime: -1 });
+    let reviews = await Review.find({ pid: pid }).sort({ createdAt: -1 });
 
     for (i in reviews) {
         reviews[i] = await appendUser(reviews[i]);
@@ -47,7 +47,7 @@ router.get('/pid/:id', async (req, res) => {
 // append user info to review
 function appendUser(review) {
     return new Promise((resolve, reject) => {
-        const fullReview = _.pick(review, ['_id', 'uid', 'pid', 'score', 'text']);
+        const fullReview = _.pick(review, ['_id', 'uid', 'pid', 'score', 'text', 'createdAt']);
         query = 'SELECT firstname, lastname FROM Users WHERE uid=' + sqlconn.escape(fullReview.uid);
         sqlconn.query(query, function (err, rows, fields) {
             var user = rows[0];
@@ -63,7 +63,7 @@ router.get('/uid/:id', async (req, res) => {
 
     const uid = req.params.id;
 
-    let reviews = await Review.find({ uid: uid }).sort({ datetime: -1 });
+    let reviews = await Review.find({ uid: uid }).sort({ createdAt: -1 });
 
     for (i in reviews) {
         reviews[i] = await appendUser(reviews[i]);
