@@ -25,6 +25,9 @@
     "pug": "^2.0.3",
     "underscore": "^1.9.1"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
