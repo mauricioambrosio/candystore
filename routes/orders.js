@@ -110,7 +110,7 @@ router.put('/cancel/:id', authUserToken, (req, res) => {
         if (!order) return res.status(400).send('Order does not exist.');
         else  {
             // if order does not belong to current user
-            if (req.user.uid !== order.uid) return res.status(403).send('Access denied. Not allowed to perform operation.');
+            if (req.user.uid !== order.uid) return res.status(401).send('Access denied. Not allowed to perform operation.');
 
             // query to change order status to cancelled and employee id of the status changer to null 
             query = 'UPDATE User_Orders SET \
