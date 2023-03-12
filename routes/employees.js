@@ -7,7 +7,7 @@ const {employeeEmailExists} = require('../helpers/emailExists');
 const constants = require('../helpers/constants');
 
 const _ = require('lodash');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');

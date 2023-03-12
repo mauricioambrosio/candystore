@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
-    "bcrypt": "^3.0.8",
+    "bcryptjs": "^2.4.3",
     "config": "^3.0.1",
     "cors": "^2.8.4",
     "dateformat": "^3.0.3",
@@ -26,10 +26,9 @@
     "underscore": "^1.9.1"
   },
   "engines": {
-    "node": "18.x",
+    "node": "18.15.0",
     "npm": "9.5.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
